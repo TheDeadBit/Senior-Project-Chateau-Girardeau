@@ -1,6 +1,9 @@
 import tkinter as tk
+import pandas as pd
+from platform import system
 from tkinter import messagebox
 from utils.create_elem import GridManager
+from os.path import abspath
 
 
 
@@ -11,20 +14,52 @@ class GUI:
         self.root.geometry(newGeometry="800x500")
 
         tk.Button(master=self.root, text="Create invoice", command=self.invoice).pack()
+        tk.Button(master=self.root, text="Exit", command=self.exit_main).pack()
 
         self.root.mainloop()
     
 
-    def invoice(self):
+    def invoice(self) -> None:
         def submit() -> None:
-            # needs to be added validating and actual data saving
+            data = {
+                "Lot number": [lot_number.get()],
+                "Requesting party": [requesting_party.get()],
+                "Date issued": [date_issued.get()],
+                "Category": [category.get()],
+                "Shipment Quantity": [shipment_quantity.get()],
+                "Unit price": [unit_price.get()],
+            }
+            
+            pdf = pdf_file_location.get()
+
+            if not pdf == "":
+                data["PDF file location"] = [pdf]
+
+            data_frame = pd.DataFrame(data=data)
+            path = ""
+
+            if system() == "Windows":
+                path = f"{abspath(path='excel files')}\\invoice_{lot_number.get()}.xlsx"
+            elif system() == "Linux":
+                path = f"{abspath(path='excel files')}/invoice_{lot_number.get()}.xlsx"
+
+            with pd.ExcelWriter(path=path, engine="xlsxwriter") as writer:
+                data_frame.to_excel(writer, index=False, sheet_name="Sheet 1")
+
+                for column in data_frame:
+                    column_length = len(column)
+                    col_index = data_frame.columns.get_loc(column)
+                    writer.sheets["Sheet 1"].set_column(col_index, col_index, column_length + 15)
+            
+            
+            create_invoice_window.destroy()
             messagebox.showinfo(title="Status", message="Invoice saved!")
 
         
-        self.create_invoice_window = tk.Tk()
-        self.create_invoice_window.title(string="Invoice")
+        create_invoice_window = tk.Tk()
+        create_invoice_window.title(string="Invoice")
 
-        label_frame = tk.Frame(master=self.create_invoice_window)
+        label_frame = tk.Frame(master=create_invoice_window)
         grid_manager = GridManager(max_cols=2, master=label_frame)
 
         lot_number = tk.Variable(master=label_frame)
@@ -61,5 +96,7 @@ class GUI:
         label_frame.pack(fill='x')
 
 
+    def exit_main(self) -> None:
+        self.root.destroy()
 
 GUI()
