@@ -31,14 +31,14 @@ class GridManager:
             self.update_cnf(new_row=self.row, new_column=self.col)
     
 
-    def create_entry(self, textvariable: tk.Variable | None) -> None:
+    def create_entry(self, text_variable: tk.Variable) -> None:
         self.check_row_col()
-        tk.Entry(master=self.master, textvariable=textvariable).grid(cnf=self.cnf)
+        tk.Entry(master=self.master, textvariable=text_variable).grid(cnf=self.cnf)
         self.col += 1
         self.update_cnf(new_row=self.row, new_column=self.col)
         
     
-    def create_label(self, text: str | None) -> None:
+    def create_label(self, text: str) -> None:
         self.check_row_col()
         tk.Label(master=self.master, text=text).grid(cnf=self.cnf)
         self.col += 1
