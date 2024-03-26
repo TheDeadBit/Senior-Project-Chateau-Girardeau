@@ -2,8 +2,10 @@ import tkinter as tk
 import pandas as pd
 from platform import system
 from tkinter import messagebox
+from tkinter import simpledialog
 from utils.create_elem import GridManager
 from os.path import abspath
+from os import walk
 
 
 
@@ -21,6 +23,12 @@ class GUI:
             "Unit Price": [],
             "PDF file location": []
         }
+        self.file_path = ""
+
+        if system() == "Windows":
+            self.excel_files_dir = f"{abspath(path='excel files')}\\"
+        elif system() == "Linux":
+            self.excel_files_dir = f"{abspath(path='excel files')}/"
 
         tk.Button(master=self.root, text="Create invoice", command=self.invoice_form).pack()
         tk.Button(master=self.root, text="Edit Invoice", command=self.edit_invoice).pack()
@@ -29,9 +37,89 @@ class GUI:
         self.root.mainloop()
     
 
-    def invoice_form(self) -> None:
+    def _reset_dict(self) -> None:
+        self.invoice_data = {key: [] for key in self.invoice_data}
+    
+
+    def _fill_invoice_data(self) -> None:
+        self.invoice_data["Lot number"].append(self.lot_number.get())
+        self.invoice_data["Requesting party"].append(self.requesting_party.get())
+        self.invoice_data["Date issued"].append(self.date_issued.get())
+        self.invoice_data["Category"].append(self.category.get())
+        self.invoice_data["Shipment Quantity"].append(self.shipment_quantity.get())
+        self.invoice_data["Unit Price"].append(self.unit_price.get())
+
+
+        if not self.pdf_file_location.get() == "":
+            self.invoice_data["PDF file location"].append(self.pdf_file_location())
+        else:
+            self.invoice_data["PDF file location"].append("Not specified")
+
+
+    def show_info(self) -> None:
+        excel_invoice = pd.read_excel(io=self.file_path)
+
+        message = []
+
+        for column_name in excel_invoice:
+            message.append(f"{column_name}: {excel_invoice[column_name][0]}\n")
+
+        messagebox.showinfo(title="Invoice current status", message="".join(message))
+
+
+    def create_invoice(self) -> None:    
+        self._fill_invoice_data()
+
+        data_frame = pd.DataFrame(data=self.invoice_data)
+        if not self.file_path:
+            path = self.excel_files_dir + self.invoice_data['Lot number'][0] + ".xlsx"
+        else:
+            path = self.file_path
+
+
+        with pd.ExcelWriter(path=path, engine="xlsxwriter") as writer:
+            data_frame.to_excel(writer, index=False, sheet_name="Sheet 1")
+
+            for column in data_frame:
+                column_length = len(column)
+                col_index = data_frame.columns.get_loc(column)
+                writer.sheets["Sheet 1"].set_column(col_index, col_index, column_length + 15)
+            
+        
+        self._reset_dict()
+        self.create_invoice_window.destroy()
+        messagebox.showinfo(title="Status", message="Invoice saved!")
+
+
+    def edit_invoice(self) -> None:
+        lot_number = simpledialog.askstring(title="Lot number", prompt="Please Enter the lot number of invoice: ")
+        found_file = False
+        lot_numbers = []
+        
+        for _, _, files in walk(self.excel_files_dir):
+            for file in files:
+                if file.endswith(".xlsx"):
+                    file_lot_number = file.removesuffix(".xlsx").split("_")[1]
+
+                    if file_lot_number == lot_number:
+                        found_file = True
+                        self.file_path = self.excel_files_dir + file
+                        break
+                    else:
+                        lot_numbers.append(file_lot_number)
+
+            break
+        
+        if found_file:
+            messagebox.showinfo(title="Status", message="Invoice found! Place new values in the new window.")
+            self.invoice_form(title=f"Edit Invoice {lot_number}", status = True)
+        else:
+            messagebox.showerror(title="Status", message="Invoice not found!\nCheck in excel files directory!")
+
+
+    def invoice_form(self, title = "Invoice", status = False) -> None:
         self.create_invoice_window = tk.Tk()
-        self.create_invoice_window.title(string="Invoice")
+        self.create_invoice_window.title(string=title)
 
         label_frame = tk.Frame(master=self.create_invoice_window)
         grid_manager = GridManager(max_cols=2, master=label_frame)
@@ -44,8 +132,9 @@ class GUI:
         self.unit_price = tk.Variable(master=label_frame)
         self.pdf_file_location = tk.Variable(label_frame)
         
-        grid_manager.create_label(text="Lot number: ")
-        grid_manager.create_entry(text_variable=self.lot_number)
+        if title == "Invoice":
+            grid_manager.create_label(text="Lot number: ")
+            grid_manager.create_entry(text_variable=self.lot_number)
 
         grid_manager.create_label(text="Requesting party: ")
         grid_manager.create_entry(text_variable=self.requesting_party)
@@ -68,58 +157,14 @@ class GUI:
 
         grid_manager.create_button(text="Submit", command=self.create_invoice)
 
+        if status:
+            grid_manager.create_button(text="Status", command=self.show_info)
+
         label_frame.pack(fill='x')
-        print()
-    
-
-    def create_invoice(self) -> None:    
-        self.invoice_data["Lot number"].append(self.lot_number.get())
-        self.invoice_data["Requesting party"].append(self.requesting_party.get())
-        self.invoice_data["Date issued"].append(self.date_issued.get())
-        self.invoice_data["Category"].append(self.category.get())
-        self.invoice_data["Shipment Quantity"].append(self.shipment_quantity.get())
-        self.invoice_data["Unit Price"].append(self.unit_price.get())
-
-
-        if not self.pdf_file_location.get() == "":
-            self.invoice_data["PDF file location"].append(self.pdf_file_location())
-        else:
-            self.invoice_data["PDF file location"].append("Not specified")
-
-
-        data_frame = pd.DataFrame(data=self.invoice_data)
-        path = ""
-
-        if system() == "Windows":
-            path = f"{abspath(path='excel files')}\\invoice_{self.invoice_data['Lot number'][0]}.xlsx"
-        elif system() == "Linux":
-            path = f"{abspath(path='excel files')}/invoice_{self.invoice_data['Lot number'][0]}.xlsx"
-
-        with pd.ExcelWriter(path=path, engine="xlsxwriter") as writer:
-            data_frame.to_excel(writer, index=False, sheet_name="Sheet 1")
-
-            for column in data_frame:
-                column_length = len(column)
-                col_index = data_frame.columns.get_loc(column)
-                writer.sheets["Sheet 1"].set_column(col_index, col_index, column_length + 15)
-            
-            
-        self.create_invoice_window.destroy()
-        messagebox.showinfo(title="Status", message="Invoice saved!")
-
-        
-        
-
-
-    def edit_invoice(self) -> None:
-        # ask the user for invoice lot number
-        # look inside excel files directory for the correct invoice
-        # read the data
-        # load the data inside window
-        pass
 
 
     def exit_main(self) -> None:
         self.root.destroy()
+
 
 GUI()
