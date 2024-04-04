@@ -15,7 +15,7 @@ class GUI:
         self.root.title(string="PyInvoicer")
         self.root.geometry(newGeometry="800x500")
         self.invoice_data = {
-            "Lot number": [],
+            "House Number": [],
             "Requesting party": [],
             "Date issued": [],
             "Category": [],
@@ -42,7 +42,7 @@ class GUI:
     
 
     def _fill_invoice_data(self) -> None:
-        self.invoice_data["Lot number"].append(self.lot_number.get())
+        self.invoice_data["House Number"].append(self.lot_number.get())
         self.invoice_data["Requesting party"].append(self.requesting_party.get())
         self.invoice_data["Date issued"].append(self.date_issued.get())
         self.invoice_data["Category"].append(self.category.get())
@@ -72,7 +72,7 @@ class GUI:
 
         data_frame = pd.DataFrame(data=self.invoice_data)
         if not self.file_path:
-            path = self.excel_files_dir + self.invoice_data['Lot number'][0] + ".xlsx"
+            path = self.excel_files_dir + self.invoice_data['House Number'][0] + ".xlsx"
         else:
             path = self.file_path
 
@@ -92,7 +92,7 @@ class GUI:
 
 
     def edit_invoice(self) -> None:
-        lot_number = simpledialog.askstring(title="Lot number", prompt="Please Enter the lot number of invoice: ")
+        lot_number = simpledialog.askstring(title="House Number ", prompt="Please Enter the House Number of invoice: ")
         found_file = False
         lot_numbers = []
         
@@ -133,7 +133,7 @@ class GUI:
         self.pdf_file_location = tk.Variable(label_frame)
         
         if title == "Invoice":
-            grid_manager.create_label(text="Lot number: ")
+            grid_manager.create_label(text="House Number: ")
             grid_manager.create_entry(text_variable=self.lot_number)
 
         grid_manager.create_label(text="Requesting party: ")
