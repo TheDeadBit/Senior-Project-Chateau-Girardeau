@@ -14,10 +14,10 @@ def main():
       street_number = input("What is the street number? ")
       house_number = input("What is the House Number? ")
 
-      print(f'searching for {street_number}{street_name}lot{house_number}.csv')
+      print(f'searching for {street_number}{street_name}lot{house_number}.xlsx')
 
-      df = pd.read_csv(f'{street_number}{street_name}lot{house_number}.csv')
-      svdf = pd.read_csv(f'{street_number}{street_name}lot{house_number}sv.csv')
+      df = pd.read_excel(f'{street_number}{street_name}lot{house_number}.xlsx')
+      svdf = pd.read_excel(f'{street_number}{street_name}lot{house_number}sv.xlsx')
       
       # Clean 'Percent Billed' column by replacing NA or inf values with 0
       svdf[f'House Number {house_number}'] = svdf[f'House Number {house_number}'].astype('string')
@@ -76,7 +76,7 @@ def main():
   
   svdf = get_totals(svdf, False)
   print(svdf)
-  svdf.to_csv(f'{street_number}{street_name}House Number {house_number}sv.csv', index=False)
+  svdf.to_excel(f'{street_number}{street_name}House Number {house_number}sv.xlsx', index=False)
   input('Press Enter to complete')
 
 
