@@ -9,11 +9,8 @@ from os import walk
 
 
 
-class GUI:
+class CreateInvoice(object):
     def __init__(self) -> None:
-        self.root = tk.Tk()
-        self.root.title(string="PyInvoicer")
-        self.root.geometry(newGeometry="800x500")
         self.invoice_data = {
             "House Number": [],
             "Requesting party": [],
@@ -23,26 +20,26 @@ class GUI:
             "Unit Price": [],
             "PDF file location": []
         }
+        # the path for excel file which is to be edited
         self.file_path = ""
 
+        # determine if the environment is Linux or Windows
+        # setup the full path for the excel files directory
         if system() == "Windows":
             self.excel_files_dir = f"{abspath(path='excel files')}\\"
         elif system() == "Linux":
             self.excel_files_dir = f"{abspath(path='excel files')}/"
-
-        tk.Button(master=self.root, text="Create invoice", command=self.invoice_form).pack()
-        tk.Button(master=self.root, text="Edit Invoice", command=self.edit_invoice).pack()
-        tk.Button(master=self.root, text="Exit", command=self.exit_main).pack()
-
-        self.root.mainloop()
     
 
+    # basically empty the dictionary
+    # keep the keys but clear the lists
     def _reset_dict(self) -> None:
         self.invoice_data = {key: [] for key in self.invoice_data}
     
 
+    # get the data from the user and fill the dictionary
     def _fill_invoice_data(self) -> None:
-        self.invoice_data["House Number"].append(self.lot_number.get())
+        self.invoice_data["House Number"].append(self.house_number.get())
         self.invoice_data["Requesting party"].append(self.requesting_party.get())
         self.invoice_data["Date issued"].append(self.date_issued.get())
         self.invoice_data["Category"].append(self.category.get())
@@ -55,11 +52,14 @@ class GUI:
         else:
             self.invoice_data["PDF file location"].append("Not specified")
 
-
+    # if user is editng a invoice
+    # show status of the current invoice
     def show_info(self) -> None:
+        # read the excel file which is to be edited
         excel_invoice = pd.read_excel(io=self.file_path)
 
         message = []
+
 
         for column_name in excel_invoice:
             message.append(f"{column_name}: {excel_invoice[column_name][0]}\n")
@@ -67,64 +67,101 @@ class GUI:
         messagebox.showinfo(title="Invoice current status", message="".join(message))
 
 
-    def create_invoice(self) -> None:    
+    # create a new invoice
+    def create_invoice(self) -> None:
+        # get the data from the user    
         self._fill_invoice_data()
 
+        # create new data frame
         data_frame = pd.DataFrame(data=self.invoice_data)
+
+        # check if we are trying to modify existing file
+        # if no then generate path for the new file
+        # is yes then use the file path
         if not self.file_path:
             path = self.excel_files_dir + self.invoice_data['House Number'][0] + ".xlsx"
         else:
             path = self.file_path
 
-
+        
+        # open the file for editing
         with pd.ExcelWriter(path=path, engine="xlsxwriter") as writer:
+            # write the data frame to the excel file in sheet named Sheet 1
             data_frame.to_excel(writer, index=False, sheet_name="Sheet 1")
 
+            # fix the length of the columns
             for column in data_frame:
                 column_length = len(column)
                 col_index = data_frame.columns.get_loc(column)
                 writer.sheets["Sheet 1"].set_column(col_index, col_index, column_length + 15)
             
         
+        # clear the invoice data 
         self._reset_dict()
-        self.create_invoice_window.destroy()
+        # destroy the invoice window
+        self.invoice_window.destroy()
+        # display message
         messagebox.showinfo(title="Status", message="Invoice saved!")
 
 
+    # edit invoice function
     def edit_invoice(self) -> None:
-        lot_number = simpledialog.askstring(title="House Number ", prompt="Please Enter the House Number of invoice: ")
+        # get the house number from the user
+        house_number = simpledialog.askstring(title="House Number ", prompt="Please Enter the House Number of invoice: ")
+
+        # if the user clicked cancel or has not provided house number
+        # exit the function
+        if house_number == None:
+            return
+        
+        # bool flag to determine if file is found or not
         found_file = False
-        lot_numbers = []
+        # list for all valid house numbers 
+        house_numbers = []
         
         for _, _, files in walk(self.excel_files_dir):
             for file in files:
+                # check if the file is excel
                 if file.endswith(".xlsx"):
-                    file_lot_number = file.removesuffix(".xlsx").split("_")[1]
+                    # get the house number
+                    file_house_number = file.removesuffix(".xlsx").split("_")[1]
 
-                    if file_lot_number == lot_number:
+                    # compare the file house number to the wanted house number
+                    # if they match, change flag to true and setup the file path var
+                    # if they do not match, add the file house number to the house_numbers
+                    if file_house_number == house_number:
                         found_file = True
                         self.file_path = self.excel_files_dir + file
                         break
                     else:
-                        lot_numbers.append(file_lot_number)
+                        house_numbers.append(file_house_number)
 
             break
-        
+
+        # if the wanted file is found
+        # diplay message, and open an invoice form with the data contained in the file
+        # if the file is not found, display message
         if found_file:
             messagebox.showinfo(title="Status", message="Invoice found! Place new values in the new window.")
-            self.invoice_form(title=f"Edit Invoice {lot_number}", status = True)
+            self.invoice_form(title=f"Edit Invoice {house_number}", status = True)
         else:
             messagebox.showerror(title="Status", message="Invoice not found!\nCheck in excel files directory!")
 
 
-    def invoice_form(self, title = "Invoice", status = False) -> None:
-        self.create_invoice_window = tk.Tk()
-        self.create_invoice_window.title(string=title)
+    # inform voice
+    def invoice_form(self, title = "Create Invoice", status = False) -> None:
+        # create invoice window
+        self.invoice_window = tk.Tk()
+        self.invoice_window.title(string=title)
 
-        label_frame = tk.Frame(master=self.create_invoice_window)
+        # create label frame
+        label_frame = tk.Frame(master=self.invoice_window)
+        # create grid manager, which will manage the frame
+        # the max columns will be 2, and the master is the label frame
         grid_manager = GridManager(max_cols=2, master=label_frame)
 
-        self.lot_number = tk.Variable(master=label_frame)
+        # create tk varibles
+        self.house_number = tk.Variable(master=label_frame)
         self.requesting_party = tk.Variable(master=label_frame)
         self.date_issued = tk.Variable(master=label_frame)
         self.category = tk.Variable(master=label_frame)
@@ -132,10 +169,15 @@ class GUI:
         self.unit_price = tk.Variable(master=label_frame)
         self.pdf_file_location = tk.Variable(label_frame)
         
-        if title == "Invoice":
+        # if the user creates invoice
+        # add house number label
+        if title == "Create Invoice":
             grid_manager.create_label(text="House Number: ")
-            grid_manager.create_entry(text_variable=self.lot_number)
+            grid_manager.create_entry(text_variable=self.house_number)
 
+
+        # creat new labels and entrys
+        
         grid_manager.create_label(text="Requesting party: ")
         grid_manager.create_entry(text_variable=self.requesting_party)
 
@@ -157,14 +199,13 @@ class GUI:
 
         grid_manager.create_button(text="Submit", command=self.create_invoice)
 
+        # if the user edits invoice, display current status
         if status:
             grid_manager.create_button(text="Status", command=self.show_info)
 
+        # fill empty spaces
         label_frame.pack(fill='x')
 
 
-    def exit_main(self) -> None:
-        self.root.destroy()
 
-
-GUI()
+CreateInvoice()
