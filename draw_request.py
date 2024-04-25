@@ -1,9 +1,36 @@
-from datetime import datetime
+import os
+import tkinter as tk
+from tkinter import filedialog
 import pandas as pd
 import xlsxwriter
 import numpy as np
+from datetime import datetime
 
+##CONTROLLER HELPER FUNCTIONS
+def __find_files__(self, direct):
 
+    #Calculate time frame for invoices
+    end_date = datetime.datetime.now()
+    start_date = end_date - datetime.timedelta(days=7)
+
+    #List of all files in provided directory
+    all_files = os.listdir(direct)
+
+    #List of excel files
+    excel_files = []
+    
+    #Filter files based on their type and modification time within the specified time frame
+    for file in all_files:
+        file_path = os.path.join(direct, file)
+        if file.endswith('.xlsx') and os.path.getmtime(file_path) >= start_date.timestamp():
+            excel_files.append(file_path)
+
+    # Read all Excel files into a list of DataFrames
+    excel_list = [pd.read_excel(file) for file in excel_files]
+    excel_df = pd.concat(excel_list, ignore_index=True)
+    return excel_df
+
+##MODEL CLASS
 class Draw_Request:
     def __init__(self):
         self.workbook = xlsxwriter.Workbook('sample.xlsx')
@@ -68,5 +95,42 @@ class Draw_Request:
 
         self.workbook.close()
 
+##VIEWER CLASS
+class Request_Viewer:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.root.title("File Selection")
+
+    def __select__direct__(self):
+        file_dir = filedialog.askdirectory()
+        if file_dir:
+            print("File directory: ", file_dir)
+
+    def show_window(self):
+        #Format window
+        window = tk.Toplevel(self.root)
+        window.title("Select Files")
+        label = tk.Label(window, text = "Please select a directory for Draw Request")
+        label.pack(padx = 20, pady = 20)
         
+        #Enter button
+        enter_button = tk.Button(window, text = "Select Directory", command = self.__select__direct__)
+        enter_button.pack(pady = 10)
         
+        #Cancel button
+        cancel_button = tk.Button(window, text="Cancel", command=lambda: self.close_window(window))
+        cancel_button.pack(pady = 5)
+    
+    def close_window(self, window):
+        window.destory()
+
+#TESTING
+def main():
+    view = Request_Viewer()
+    root = view.root
+    start = tk.Button(root, text="TESTING", command = view.show_window)
+    start.pack(padx=20, pady=10)
+    view.root.mainloop()
+
+if __name__ == "__main__":
+    main()
