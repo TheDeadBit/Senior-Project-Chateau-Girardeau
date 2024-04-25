@@ -2,7 +2,6 @@ from datetime import datetime
 import pandas as pd
 import xlsxwriter
 import numpy as np
-from control_request import Request_Controller
 
 
 class Draw_Request:
@@ -20,11 +19,11 @@ class Draw_Request:
         self.format_title(title_df)
 
         invoice_df = excel_df.loc[:, ['Requesting Party', 'Category',
-                                      'Shipment Quantity', 'Unit Price']]
-        #invoice_df = self.format_invoice_data(invoice_df)
-        #return invoice_df
+                                      'Shipment Quantity', 'Unit Price', 'Date Issued']]
+        self.format_invoice_data(invoice_df)
 
     def format_title(self, title_df):
+
         title_format = self.workbook.add_format({'bold': True, 'font_size': 14})
         self.worksheet.merge_range('B1:E1', 'Construction Draw Request Form', title_format)
         self.worksheet.write('B3', 'Customer:', self.subtitle_format)
@@ -38,35 +37,36 @@ class Draw_Request:
         self.worksheet.set_column('B:E', 20)
 
 
-    #def format_invoice_data(self, invoice_df):
+    def format_invoice_data(self, invoice_df):
         #First calculate total costs for all invoices
-        #invoice_df['$ Amount $'] = invoice_df['Shipment Quantity'] * invoice_df['Unit Price']
+        invoice_df['$ Amount $'] = (invoice_df['Shipment Quantity'] * invoice_df['Unit Price']).round(2)
         
         #Add in blank column for 'Check #' column in excel file
-        #invoice_df['Check #'] = np.nan
+        invoice_df['Check #'] = np.nan
 
         #Format columns
-        #self.worksheet.write('A7', 'Category', self.subtitle_format)  # Write the title with the subtitle format
-        #for i, category in enumerate(invoice_df['Category'], start=7):
-            #self.worksheet.write(f'A{i+1}', category)
+        self.worksheet.write('A7', 'Category', self.subtitle_format)
+        for i, category in enumerate(invoice_df['Category'], start=7):
+            self.worksheet.write(f'A{i+1}', category)
+        
+        self.worksheet.write('B7', 'Requesting Party', self.subtitle_format)
+        for i, category in enumerate(invoice_df['Requesting Party'], start=7):
+            self.worksheet.write(f'B{i+1}', category)
+        
+        self.worksheet.write('C7', 'Date Issued', self.subtitle_format)
+        date_format = self.workbook.add_format({'num_format': 'mm/dd/yyyy'})
+        for i, date_issued in enumerate(invoice_df['Date Issued'], start=7):
+            self.worksheet.write_datetime(f'C{i+1}', date_issued, date_format)
+
+        self.worksheet.write('D7', 'Check #', self.subtitle_format) 
+        for i in range(len(invoice_df['Check #'])):
+            self.worksheet.write_blank(f'D{i+8}', None, self.subtitle_format) 
+
+        self.worksheet.write('E7', '$ Amount $', self.subtitle_format) 
+        for i, category in enumerate(invoice_df['$ Amount $'], start=7):
+            self.worksheet.write(f'E{i+1}', category)
+
+        self.workbook.close()
 
         
         
-
-
-        
-def main():
-
-    # Create an instance of Request_Control
-    control = Request_Controller()
-    build = Draw_Request()
-
-    #Path
-    direct= r'C:\Users\ehelt\OneDrive\Documents\Draw Request Test'
-
-    #Test
-    excel_df = control.__find_files__(direct)
-    build.__build_request__(excel_df)
-
-if __name__ == "__main__":
-    main()
