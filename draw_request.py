@@ -124,7 +124,7 @@ class Request_Viewer:
     def close_window(self, window):
         window.destory()
 
-#TESTING
+#TESTING WILL DELETE LATER
 def main():
     view = Request_Viewer()
     root = view.root
