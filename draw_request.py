@@ -8,16 +8,17 @@ import datetime
 
 ##MODEL CLASS
 class Draw_Request:
-    def __init__(self, output_direct, file_name):
+    def __init__(self, output_direct, file_name, drawreq_num):
         self.direct = output_direct
         #Create excel workbook in directory
         self.workbook = xlsxwriter.Workbook(os.path.join(self.direct, file_name))
         self.worksheet = self.workbook.add_worksheet()
         self.subtitle_format = self.workbook.add_format({'bold': True, 'font_size': 12})
         self.info_format = self.workbook.add_format({'font_size': 12})
+        self.draw_num = drawreq_num
 
     def __build_request__(self, excel_df):
-        title_data = {'Customer': ['Ramsey Run'], 'Draw Number': [0],
+        title_data = {'Customer': ['Ramsey Run'], 'Draw Number': [self.draw_num],
                       'Property': [excel_df.iloc[0, excel_df.columns.get_loc('House Number')]],
                       'Date': [datetime.datetime.now()]}
         title_df = pd.DataFrame(title_data)
@@ -81,11 +82,56 @@ class Request_Viewer(object):
         self.root.geometry("800x500")
         self.entry = None
         self.elements = []
+    
+    def main_window(self) -> None:
+        # Select directory
+        label = tk.Label(self.root, text="Please select directory for invoice files:")
+        self.elements.append(label)
+        label.pack()
+        
+        # Enter button
+        enter = tk.Button(self.root, text="Select Directory", command=self.select_invoice)
+        self.elements.append(enter)
+        enter.pack()
+        
+        # Cancel button
+        cancel = tk.Button(self.root, text="Cancel", command=self.close_window)
+        self.elements.append(cancel)
+        cancel.pack()
+
+        self.root.mainloop()
+    
+    def exit(self) -> None:
+        #Exit
+        label = tk.Label(self.root, text = "Draw Request generated!")
+        self.elements.append(label)
+        label.pack()
+
+        button = tk.Button(self.root, text="Return to Main Menu", command=self.close_window)
+        self.elements.append(button)
+        button.pack()
+    
+    def get_filename_window(self) -> None:
+        #Ask for filename
+        label = tk.Label(self.root, text = "Save as?")
+        self.elements.append(label)
+        label.pack()
+
+        #Create entry point for input
+        self.entry = tk.Entry(self.root)
+        self.elements.append(self.entry)
+        self.entry.pack()
+
+        button = tk.Button(self.root, text = "Enter", command = self.get_filename)
+        self.elements.append(button)
+        button.pack()
 
     def select_invoice(self) -> None:
+        #Receives invoice files
         self.invoice_direct = filedialog.askdirectory()
         self.clear_gui()
 
+        #Next part of the program
         #Directory that draw request will be saved to
         label = tk.Label(self.root, text="Save Draw Request to?")
         self.elements.append(label)
@@ -108,48 +154,33 @@ class Request_Viewer(object):
         self.entry = tk.Entry(self.root)
         self.elements.append(self.entry)
         self.entry.pack()
-        self.drawreq_num = self.entry.get()
-        
+
         #Enter button
-        enter = tk.Button(self.root, text = "Enter", command = self.clear_gui)
+        enter = tk.Button(self.root, text = "Enter", command = self.get_draw_num)
         self.elements.append(enter)
         enter.pack()
-
-
+    
     #Clears GUI Grid
     def clear_gui(self) -> None:
         for element in self.elements:
             element.destroy()
     
-    def show_mainloop(self) -> None:
-        # Select directory
-        label = tk.Label(self.root, text="Please select directory for invoice files:")
-        self.elements.append(label)
-        label.pack()
-        
-        # Enter button
-        enter = tk.Button(self.root, text="Select Directory", command=self.select_invoice)
-        self.elements.append(enter)
-        enter.pack()
-        
-        # Cancel button
-        cancel = tk.Button(self.root, text="Cancel", command=self.close_window)
-        self.elements.append(cancel)
-        cancel.pack()
-
-        self.root.mainloop()
-    
-    def end(self) -> None:
-        label = tk.Label(self.root, text = "Draw Request generated!")
-        self.elements.append(label)
-        label.pack()
-
-        button = tk.Button(self.root, text="Return to Main Menu", command=self.close_window)
-        self.elements.append(button)
-        button.pack()
-
+    #Close window (exit)
     def close_window(self) -> None:
         self.root.destroy()
+    
+    #Gets draw number
+    def get_draw_num(self) -> None:
+        self.drawreq_num = self.entry.get()
+        self.clear_gui()
+        self.entry = None
+        self.get_filename_window()
+
+    #Gets filename
+    def get_filename(self) -> None:
+        self.filename = self.entry.get()
+        self.clear_gui()
+        self.exit()
 
 ##CONTROLLER CLASS
 class Control_Request(object):
@@ -158,18 +189,16 @@ class Control_Request(object):
     
     def driver(self) -> None:
         view = Request_Viewer()
-        view.show_mainloop()
+        view.main_window()
 
-        #Read excel files to pd dataframe
+        #Read excel files to pd dataframe          
         excel_files = self.__find_files__(view.invoice_direct)
 
         #Analyze data using Draw_Request() model class
-        print(view.drawreq_num)      #<----------------------------------------- NEEDS FIXED
-        filename = "draw_request" + view.drawreq_num + ".xlsx"
-        model = Draw_Request(view.drawreq_direct, filename)
+        drawreq_name = str(view.filename) + '.xlsx'
+        model = Draw_Request(view.drawreq_direct, drawreq_name, view.drawreq_num)
         model.__build_request__(excel_files)
 
-        view.end()
 
     def __find_files__(self, direct) -> None:
         #Calculate time frame for invoices
@@ -192,3 +221,4 @@ class Control_Request(object):
         excel_list = [pd.read_excel(file) for file in excel_files]
         excel_df = pd.concat(excel_list, ignore_index=True)
         return excel_df
+    
