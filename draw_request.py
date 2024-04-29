@@ -122,7 +122,7 @@ class Request_Viewer:
         cancel_button.pack(pady = 5)
     
     def close_window(self, window):
-        window.destory()
+        window.destroy()
 
 #TESTING
 def main():

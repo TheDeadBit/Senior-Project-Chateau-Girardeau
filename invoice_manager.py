@@ -3,13 +3,12 @@ import pandas as pd
 from platform import system
 from tkinter import messagebox
 from tkinter import simpledialog
+from tkinter import filedialog
 from utils.create_elem import GridManager
-from os.path import abspath
-from os import walk
 
 
 
-class CreateInvoice(object):
+class ManageInvoice(object):
     def __init__(self) -> None:
         self.invoice_data = {
             "House Number": [],
@@ -20,15 +19,9 @@ class CreateInvoice(object):
             "Unit Price": [],
             "PDF file location": []
         }
+
         # the path for excel file which is to be edited
         self.file_path = ""
-
-        # determine if the environment is Linux or Windows
-        # setup the full path for the excel files directory
-        if system() == "Windows":
-            self.excel_files_dir = f"{abspath(path='excel files')}\\"
-        elif system() == "Linux":
-            self.excel_files_dir = f"{abspath(path='excel files')}/"
     
 
     # basically empty the dictionary
@@ -75,11 +68,21 @@ class CreateInvoice(object):
         # create new data frame
         data_frame = pd.DataFrame(data=self.invoice_data)
 
+        path = ""
         # check if we are trying to modify existing file
         # if no then generate path for the new file
         # is yes then use the file path
         if not self.file_path:
-            path = self.excel_files_dir + self.invoice_data['House Number'][0] + ".xlsx"
+            # ask for directory
+            directory = filedialog.askdirectory()
+            # ask for filename
+            file_name = simpledialog.askstring(title="File Name", prompt="Enter Name for File: ")
+            file_name = file_name + ".xlsx"
+
+            if system() == "Windows":
+                path = directory + "\\" + file_name
+            elif system() == "Linux":
+                path = directory + "/" + file_name
         else:
             path = self.file_path
 
@@ -106,46 +109,15 @@ class CreateInvoice(object):
 
     # edit invoice function
     def edit_invoice(self) -> None:
-        # get the house number from the user
-        house_number = simpledialog.askstring(title="House Number ", prompt="Please Enter the House Number of invoice: ")
+        # get the file from the user
+        file_for_editing = filedialog.askopenfile()
+        # update the file_path class variable
+        self.file_path = file_for_editing.name
 
-        # if the user clicked cancel or has not provided house number
-        # exit the function
-        if house_number == None:
-            return
-        
-        # bool flag to determine if file is found or not
-        found_file = False
-        # list for all valid house numbers 
-        house_numbers = []
-        
-        for _, _, files in walk(self.excel_files_dir):
-            for file in files:
-                # check if the file is excel
-                if file.endswith(".xlsx"):
-                    # get the house number
-                    file_house_number = file.removesuffix(".xlsx").split("_")[1]
-
-                    # compare the file house number to the wanted house number
-                    # if they match, change flag to true and setup the file path var
-                    # if they do not match, add the file house number to the house_numbers
-                    if file_house_number == house_number:
-                        found_file = True
-                        self.file_path = self.excel_files_dir + file
-                        break
-                    else:
-                        house_numbers.append(file_house_number)
-
-            break
-
-        # if the wanted file is found
-        # diplay message, and open an invoice form with the data contained in the file
-        # if the file is not found, display message
-        if found_file:
-            messagebox.showinfo(title="Status", message="Invoice found! Place new values in the new window.")
-            self.invoice_form(title=f"Edit Invoice {house_number}", status = True)
-        else:
-            messagebox.showerror(title="Status", message="Invoice not found!\nCheck in excel files directory!")
+        # extract the file name of file_for_editing
+        file_name = self.file_path.split(sep='/')[-1]
+        # call edit form
+        self.invoice_form(title=f"Edit Invoice {file_name}", status=True)
 
 
     # inform voice
@@ -207,5 +179,4 @@ class CreateInvoice(object):
         label_frame.pack(fill='x')
 
 
-
-CreateInvoice()
+ManageInvoice()
