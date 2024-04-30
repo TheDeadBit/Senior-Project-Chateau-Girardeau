@@ -83,11 +83,24 @@ class Request_Viewer(object):
         self.entry = None
         self.elements = []
     
-    def close_window(self, window):
-        window.destroy()
+    def main_window(self) -> None:
+        # Select directory
+        label = tk.Label(self.root, text="Please select directory for invoice files:")
+        self.elements.append(label)
+        label.pack()
+
+        # Enter button
+        enter = tk.Button(self.root, text="Select Directory", command=self.select_invoice)
+        self.elements.append(enter)
+        enter.pack()
+
+        # Cancel button
+        cancel = tk.Button(self.root, text="Cancel", command=self.close_window)
+        self.elements.append(cancel)
+        cancel.pack()
 
         self.root.mainloop()
-    
+
     def exit(self) -> None:
         #Exit
         label = tk.Label(self.root, text = "Draw Request generated!")
@@ -146,6 +159,9 @@ class Request_Viewer(object):
         enter = tk.Button(self.root, text = "Enter", command = self.get_draw_num)
         self.elements.append(enter)
         enter.pack()
+
+    def close_window(self):
+        self.root.destroy()
     
     #Clears GUI Grid
     def clear_gui(self) -> None:
@@ -208,4 +224,5 @@ class Control_Request(object):
         excel_list = [pd.read_excel(file) for file in excel_files]
         excel_df = pd.concat(excel_list, ignore_index=True)
         return excel_df
-    
+
+Control_Request().driver()
