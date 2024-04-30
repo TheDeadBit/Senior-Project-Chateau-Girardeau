@@ -82,6 +82,8 @@ class Request_Viewer(object):
         self.root.geometry("800x500")
         self.entry = None
         self.elements = []
+
+        self.root.mainloop()
     
     def main_window(self) -> None:
         # Select directory

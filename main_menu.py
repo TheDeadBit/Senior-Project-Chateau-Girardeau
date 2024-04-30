@@ -1,6 +1,8 @@
 import tkinter as tk
 from invoice_manager import ManageInvoice
-from schedule_values.py import Controller
+from schedule_values import Controller
+
+
 
 class MainMenu(object):
     def __init__(self) -> None:
@@ -11,7 +13,7 @@ class MainMenu(object):
         tk.Button(master=self.root, text="Create invoice", command=ManageInvoice().invoice_form).pack()
         tk.Button(master=self.root, text="Edit Invoice", command=ManageInvoice().edit_invoice).pack()
         tk.Button(master=self.root, text="Generate Draw Request").pack()
-        tk.Button(master=self.root, text="Generate Schedule of Values", command=Controller().__init__).pack()
+        tk.Button(master=self.root, text="Generate Schedule of Values", command=Controller).pack()
         tk.Button(master=self.root, text="Exit", command=self.exit_button).pack()
 
         self.root.mainloop()
