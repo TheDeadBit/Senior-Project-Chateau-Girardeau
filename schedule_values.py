@@ -133,16 +133,16 @@ from tkinter import Button, messagebox, filedialog
 from tkinter.ttk import Frame
 
 class Controller:
-    def __init__(self, master):
-        self.master = master
+    def __init__(self):
+        self.master = tk.Tk()
         self.master.title("Budget Controller")
 
         # Button to generate a new budget
-        self.generate_budget_button = Button(master, text="Generate Budget", command=self.generate_budget)
+        self.generate_budget_button = Button(master=self.master, text="Generate Budget", command=self.generate_budget)
         self.generate_budget_button.grid(row=0, column=0, padx=10, pady=10)
 
         # Button to add draws to an existing budget
-        self.add_draws_button = Button(master, text="Add Draws", command=self.add_draws)
+        self.add_draws_button = Button(master=self.master, text="Add Draws", command=self.add_draws)
         self.add_draws_button.grid(row=0, column=1, padx=10, pady=10)
 
     def generate_budget(self):
