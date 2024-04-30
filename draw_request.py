@@ -24,8 +24,9 @@ class Draw_Request:
         title_df = pd.DataFrame(title_data)
         self.format_title(title_df)
 
-        invoice_df = excel_df.loc[:, ['Requesting Party', 'Category',
-                                      'Shipment Quantity', 'Unit Price', 'Date Issued']]
+        invoice_df = excel_df.loc[:, ['Requesting party', 'Category',
+                                      'Shipment Quantity', 'Unit Price', 'Date issued']]
+        
         self.format_invoice_data(invoice_df)
 
     def format_title(self, title_df):
@@ -39,7 +40,7 @@ class Draw_Request:
         self.worksheet.write('B4', 'Property:', self.subtitle_format)
         self.worksheet.write('C4', title_df['Property'][0], self.info_format)
         self.worksheet.write('D4', 'Date:', self.subtitle_format)
-        self.worksheet.write('E4', title_df['Date'][0].strftime('%m/%d/%Y'), self.info_format)
+        self.worksheet.write('E4', title_df['Date'][0].strftime('%m/%d/%Y'))
         self.worksheet.set_column('B:E', 20)
 
 
@@ -55,14 +56,16 @@ class Draw_Request:
         for i, category in enumerate(invoice_df['Category'], start=7):
             self.worksheet.write(f'A{i+1}', category)
         
-        self.worksheet.write('B7', 'Requesting Party', self.subtitle_format)
-        for i, category in enumerate(invoice_df['Requesting Party'], start=7):
+        self.worksheet.write('B7', 'Requesting party', self.subtitle_format)
+        for i, category in enumerate(invoice_df['Requesting party'], start=7):
             self.worksheet.write(f'B{i+1}', category)
         
-        self.worksheet.write('C7', 'Date Issued', self.subtitle_format)
+        self.worksheet.write('C7', 'Date issued', self.subtitle_format)
         date_format = self.workbook.add_format({'num_format': 'mm/dd/yyyy'})
-        for i, date_issued in enumerate(invoice_df['Date Issued'], start=7):
-            self.worksheet.write_datetime(f'C{i+1}', date_issued, date_format)
+
+        for i, date_issued in enumerate(invoice_df['Date issued'], start=7):
+            # row, col, datetime
+            self.worksheet.write_datetime(f'C{i + 1}', pd.to_datetime(date_issued))
 
         self.worksheet.write('D7', 'Check #', self.subtitle_format) 
         for i in range(len(invoice_df['Check #'])):
@@ -74,6 +77,50 @@ class Draw_Request:
 
         self.workbook.close()
 
+
+##CONTROLLER CLASS
+class Control_Request(object):
+    def __init__(self, invoice_direct: str, filename: str, drawreq_direct: str, drawreq_num: int) -> None:
+        self.invoice_direct = invoice_direct
+        self.filename = filename
+        self.drawreq_direct = drawreq_direct
+        self.drawreq_num = drawreq_num
+    
+
+    def driver(self) -> None:
+        #Read excel files to pd dataframe          
+        excel_files = self.__find_files__(self.invoice_direct)
+        
+
+        #Analyze data using Draw_Request() model class
+        drawreq_name = str(self.filename) + '.xlsx'
+        model = Draw_Request(self.drawreq_direct, drawreq_name, self.drawreq_num)
+        model.__build_request__(excel_files)
+
+
+    def __find_files__(self, direct) -> None:
+        #Calculate time frame for invoices
+        end_date = datetime.datetime.now()
+        start_date = end_date - datetime.timedelta(days=7)
+
+        #List of all files in provided directory
+        all_files = os.listdir(direct)
+
+        #List of excel files
+        excel_files = []
+        
+        #Filter files based on their type and modification time within the specified time frame
+        for file in all_files:
+            file_path = os.path.join(direct, file)
+            if file.endswith('.xlsx') and os.path.getmtime(file_path) >= start_date.timestamp():
+                excel_files.append(file_path)
+
+        # Read all Excel files into a list of DataFrames
+        excel_list = [pd.read_excel(file) for file in excel_files]
+        excel_df = pd.concat(excel_list, ignore_index=True)
+        return excel_df
+    
+
 ##VIEWER CLASS
 class Request_Viewer(object):
     def __init__(self) -> None:
@@ -83,7 +130,7 @@ class Request_Viewer(object):
         self.entry = None
         self.elements = []
 
-        self.root.mainloop()
+        self.main_window()
     
     def main_window(self) -> None:
         # Select directory
@@ -101,9 +148,10 @@ class Request_Viewer(object):
         self.elements.append(cancel)
         cancel.pack()
 
-        self.root.mainloop()
+        
 
     def exit(self) -> None:
+        Control_Request(invoice_direct=self.invoice_direct, filename=self.filename, drawreq_direct=self.drawreq_direct, drawreq_num=self.drawreq_num).driver()
         #Exit
         label = tk.Label(self.root, text = "Draw Request generated!")
         self.elements.append(label)
@@ -186,45 +234,3 @@ class Request_Viewer(object):
         self.filename = self.entry.get()
         self.clear_gui()
         self.exit()
-
-##CONTROLLER CLASS
-class Control_Request(object):
-    def __init__(self) -> None:
-        pass
-    
-    def driver(self) -> None:
-        view = Request_Viewer()
-        view.main_window()
-
-        #Read excel files to pd dataframe          
-        excel_files = self.__find_files__(view.invoice_direct)
-
-        #Analyze data using Draw_Request() model class
-        drawreq_name = str(view.filename) + '.xlsx'
-        model = Draw_Request(view.drawreq_direct, drawreq_name, view.drawreq_num)
-        model.__build_request__(excel_files)
-
-
-    def __find_files__(self, direct) -> None:
-        #Calculate time frame for invoices
-        end_date = datetime.datetime.now()
-        start_date = end_date - datetime.timedelta(days=7)
-
-        #List of all files in provided directory
-        all_files = os.listdir(direct)
-
-        #List of excel files
-        excel_files = []
-        
-        #Filter files based on their type and modification time within the specified time frame
-        for file in all_files:
-            file_path = os.path.join(direct, file)
-            if file.endswith('.xlsx') and os.path.getmtime(file_path) >= start_date.timestamp():
-                excel_files.append(file_path)
-
-        # Read all Excel files into a list of DataFrames
-        excel_list = [pd.read_excel(file) for file in excel_files]
-        excel_df = pd.concat(excel_list, ignore_index=True)
-        return excel_df
-
-Control_Request().driver()
