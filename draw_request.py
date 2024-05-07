@@ -129,8 +129,13 @@ class Request_Viewer(object):
         self.root.geometry("800x500")
         self.entry = None
         self.elements = []
+        self.invoice_direct = ""
+        self.filename = ""
+        self.drawreq_direct = ""
+        self.drawreq_num = ""
 
         self.main_window()
+    
     
     def main_window(self) -> None:
         # Select directory
@@ -149,7 +154,6 @@ class Request_Viewer(object):
         cancel.pack()
 
         
-
     def exit(self) -> None:
         Control_Request(invoice_direct=self.invoice_direct, filename=self.filename, drawreq_direct=self.drawreq_direct, drawreq_num=self.drawreq_num).driver()
         #Exit

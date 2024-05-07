@@ -1,14 +1,13 @@
 import tkinter as tk
-from tkinter import messagebox, Label, Entry, Button, StringVar
-import xlsxwriter
 import pandas as pd
 import numpy as np
-import openpyxl
-from openpyxl.styles import NamedStyle, Font, PatternFill, Border, Side, Alignment, numbers
+from tkinter import messagebox, Label, Entry, Button, filedialog
+import xlsxwriter
+
 
 class ScheduleBuilder:
     def __init__(self, filename):
-        self.workbook = xlsxwriter.Workbook(filename)
+        self.workbook = xlsxwriter.Workbook(f'{filename}.xlsx')
         self.worksheet = self.workbook.add_worksheet()
         self.setup_formats()
         self.setup_headers_and_columns(f'{filename}.xlsx')
@@ -32,6 +31,7 @@ class ScheduleBuilder:
         self.default_format = self.workbook.add_format({
             'border': 1
         })
+    
     def write_dataframe_to_sheet(self, df):
         df = df.fillna(0).replace([float('inf'), float('-inf')], 999999)
         # Write headers
@@ -131,6 +131,8 @@ class BudgetApp:
             var = tk.Variable(self.master)
             entry = Entry(self.master, textvariable=var)
             entry.grid(row=idx, column=1)
+
+
             self.entries.append(var)
 
         # Button to submit the budget values
@@ -160,13 +162,8 @@ class BudgetApp:
             messagebox.showerror("Input Error", "Please ensure all entries are numeric.")
 
 
-import tkinter as tk
-from tkinter import Button, messagebox, filedialog
-from tkinter.ttk import Frame
-
 class Controller:
     def __init__(self):
-        
         self.master = tk.Tk()
         self.master.title("Budget Controller")
 

@@ -10,7 +10,7 @@ from utils.create_elem import GridManager
 
 class ManageInvoice(object):
     def __init__(self) -> None:
-        self.invoice_data = {
+        self.invoice_data: dict[str, list[str]] = {
             "House Number": [],
             "Requesting party": [],
             "Date issued": [],
@@ -41,23 +41,9 @@ class ManageInvoice(object):
 
 
         if not self.pdf_file_location.get() == "":
-            self.invoice_data["PDF file location"].append(self.pdf_file_location())
+            self.invoice_data["PDF file location"].append(self.pdf_file_location.get())
         else:
             self.invoice_data["PDF file location"].append("Not specified")
-
-    # if user is editng a invoice
-    # show status of the current invoice
-    def show_info(self) -> None:
-        # read the excel file which is to be edited
-        excel_invoice = pd.read_excel(io=self.file_path)
-
-        message = []
-
-
-        for column_name in excel_invoice:
-            message.append(f"{column_name}: {excel_invoice[column_name][0]}\n")
-
-        messagebox.showinfo(title="Invoice current status", message="".join(message))
 
 
     # create a new invoice
@@ -99,8 +85,7 @@ class ManageInvoice(object):
                 writer.sheets["Sheet 1"].set_column(col_index, col_index, column_length + 15)
             
         
-        # clear the invoice data 
-        self._reset_dict()
+        
         # destroy the invoice window
         self.invoice_window.destroy()
         # display message
@@ -111,17 +96,20 @@ class ManageInvoice(object):
     def edit_invoice(self) -> None:
         # get the file from the user
         file_for_editing = filedialog.askopenfile()
+
+        if file_for_editing == None:
+            return
         # update the file_path class variable
         self.file_path = file_for_editing.name
 
         # extract the file name of file_for_editing
         file_name = self.file_path.split(sep='/')[-1]
         # call edit form
-        self.invoice_form(title=f"Edit Invoice {file_name}", status=True)
+        self.invoice_form(title=f"Edit Invoice {file_name}")
 
 
     # inform voice
-    def invoice_form(self, title = "Create Invoice", status = False) -> None:
+    def invoice_form(self, title = "Create Invoice") -> None:
         # create invoice window
         self.invoice_window = tk.Tk()
         self.invoice_window.title(string=title)
@@ -139,7 +127,20 @@ class ManageInvoice(object):
         self.category = tk.Variable(master=label_frame)
         self.shipment_quantity = tk.Variable(master=label_frame)
         self.unit_price = tk.Variable(master=label_frame)
-        self.pdf_file_location = tk.Variable(label_frame)
+        self.pdf_file_location = tk.Variable(master=label_frame)
+        
+        # if user edits file
+        # set the value of the varibles to the ones in the excel file
+        if title != 'Create Invoice':
+            df = pd.read_excel(self.file_path)
+            self.house_number.set(df['House Number'][0])
+            self.requesting_party.set(df['Requesting party'][0])
+            self.date_issued.set(df['Date issued'][0])
+            self.category.set(df['Category'][0])
+            self.shipment_quantity.set(df['Shipment Quantity'][0])
+            self.unit_price.set(df['Unit Price'][0])
+            self.pdf_file_location.set(df['PDF file location'][0])
+            
         
         # if the user creates invoice
         # add house number label
@@ -171,12 +172,6 @@ class ManageInvoice(object):
 
         grid_manager.create_button(text="Submit", command=self.create_invoice)
 
-        # if the user edits invoice, display current status
-        if status:
-            grid_manager.create_button(text="Status", command=self.show_info)
-
         # fill empty spaces
         label_frame.pack(fill='x')
 
-
-ManageInvoice()
